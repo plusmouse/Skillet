@@ -371,16 +371,25 @@ function Skillet:PrintRIQ()
 	end
 end
 
-local function ApplyAllocations(transaction, reagentsToApply)
-  if reagentsToApply == nil then
-    return
+local function GetReagentsForAllocations(reagentsToQuantity, reagents)
+  for _, all in ipairs(reagents) do
+    for _, item in ipairs(all) do
+      reagentsToQuantity[item.itemID] = item.quantity
+    end
   end
+end
+
+local function ApplyAllocations(transaction, modified, optional, finishing)
 	local reagentsToQuantity = {}
-	for _, all in ipairs(reagentsToApply) do
-		for _, item in ipairs(all) do
-			reagentsToQuantity[item.itemID] = item.quantity
-		end
-	end
+  if modified ~= nil then
+    GetReagentsForAllocations(reagentsToQuantity, modified)
+  end
+  if optional ~= nil then
+    GetReagentsForAllocations(reagentsToQuantity, optional)
+  end
+  if finishing ~= nil then
+    GetReagentsForAllocations(reagentsToQuantity, finishing)
+  end
 
 	local schematic = transaction:GetRecipeSchematic()
 	for slotID, reagentSlotSchematic in ipairs(schematic.reagentSlotSchematics) do
@@ -581,9 +590,7 @@ function Skillet:ProcessQueue(altMode)
 					end
 					local transaction = CreateProfessionsRecipeTransaction(C_TradeSkillUI.GetRecipeSchematic(command.recipeID, false, recipeLevel))
 					if not self.db.profile.queue_one_at_a_time then
-						ApplyAllocations(transaction, command.modifiedReagents)
-						ApplyAllocations(transaction, command.optionalReagents)
-						ApplyAllocations(transaction, command.finishingReagents)
+						ApplyAllocations(transaction, command.modifiedReagents, command.optionalReagents, command.finishingReagents)
 					end
 					self.processingLevel = recipeLevel
 					self.optionalReagentsArray = {}
